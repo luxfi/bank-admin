@@ -1,0 +1,49 @@
+name: Docker
+
+# Single-arch (linux/amd64) build on the luxfi ARC pool. Semver-only publish
+# policy: only v* tags produce a published image; branch pushes produce an
+# immutable sha-<sha7> tag for review. Never :latest / :main.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/luxfi/bank-admin
+
+jobs:
+  build:
+    runs-on: lux-build-linux-amd64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Compute tags
+        id: meta
+        run: |
+          set -e
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            v="${GITHUB_REF#refs/tags/}"
+            echo "tags=${IMAGE}:${v}" >> "$GITHUB_OUTPUT"
+          else
+            sha7="${GITHUB_SHA::7}"
+            echo "tags=${IMAGE}:sha-${sha7}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
