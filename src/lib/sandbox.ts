@@ -4,6 +4,7 @@
 //   - live mode: passes the live bankd accounts, then derives the gated bits
 //     (balances/cards/compliance) deterministically over the live records.
 // Never a Drive export.
+import { getBrand } from './brand'
 import type {
   Account,
   AccountBalances,
@@ -347,6 +348,7 @@ export function deriveNodes(): ChainNode[] {
 
 export function deriveChainInfo(): ChainInfo {
   const r = mulberry32(hashSeed('chain:v1'))
+  const dom = getBrand().domain
   const nodes = deriveNodes()
   const height = Math.max(...nodes.map((n) => n.blockHeight))
   const validators = nodes.filter((n) => n.role === 'validator').length
@@ -368,7 +370,7 @@ export function deriveChainInfo(): ChainInfo {
     validators,
     fullNodes: nodes.length - validators,
     finalizedPct: 100,
-    rpcEndpoints: ['https://rpc.testnet.lux.financial/ext/bc/C/rpc', 'wss://rpc.testnet.lux.financial/ext/bc/C/ws'],
+    rpcEndpoints: [`https://rpc.testnet.${dom}/ext/bc/C/rpc`, `wss://rpc.testnet.${dom}/ext/bc/C/ws`],
     throughput,
     recentBlocks,
   }

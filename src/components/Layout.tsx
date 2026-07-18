@@ -79,7 +79,7 @@ export function Layout() {
   const brand = useBrand()
   const mode = useAsync(getResolvedSource)
   const sandbox = hasSession()
-  const email = (user?.email as string) || sessionEmail() || 'admin@lux.financial'
+  const email = (user?.email as string) || sessionEmail() || `admin@${brand.domain}`
   const name = (user?.name as string) || (sandbox ? 'Admin' : email)
 
   function signOut() {
@@ -148,7 +148,7 @@ export function Layout() {
                 <p>
                   <span className="font-semibold">Live · bankd.</span>{' '}
                   <span className="text-info/80">
-                    Reading api.lux.financial collections. Sandbox environment — no real money or
+                    Reading api.{brand.domain} collections. Sandbox environment — no real money or
                     production records.
                   </span>
                 </p>

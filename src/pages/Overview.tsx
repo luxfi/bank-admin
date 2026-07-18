@@ -7,18 +7,20 @@ import { useAsync } from '@/hooks/useAsync'
 import { getOverview, getTransactions } from '@/lib/data'
 import { formatCompact, formatNumber, formatAmount, relativeTime, initials } from '@/lib/format'
 import { Icon } from '@/components/icons'
+import { useBrand } from '@/lib/brand'
 
 export function Overview() {
   const { data: ov, loading } = useAsync(getOverview)
   const { data: txs } = useAsync(getTransactions)
+  const brand = useBrand()
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Overview"
-        desc="Portfolio health across the Lux Financial sandbox."
+        desc={`Portfolio health across the ${brand.product} sandbox.`}
         action={
-          <Button icon="external" variant="secondary" onClick={() => window.open('https://lux.financial', '_blank')}>
+          <Button icon="external" variant="secondary" onClick={() => window.open(`https://${brand.domain}`, '_blank')}>
             View bank
           </Button>
         }

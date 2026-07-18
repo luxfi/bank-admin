@@ -6,11 +6,13 @@ import { useAsync } from '@/hooks/useAsync'
 import { getCards, setCardStatus } from '@/lib/data'
 import { formatAmount, formatCompact } from '@/lib/format'
 import { cn } from '@/lib/cn'
+import { useBrand } from '@/lib/brand'
 import type { Card as CardType } from '@/lib/types'
 
 type Filter = 'all' | 'active' | 'frozen'
 
 function CardVisual({ card, busy, onToggle }: { card: CardType; busy: boolean; onToggle: () => void }) {
+  const brand = useBrand()
   const pct = Math.min(100, (card.spendMtd / card.limitMonthly) * 100)
   const frozen = card.status === 'frozen'
   return (
@@ -22,7 +24,7 @@ function CardVisual({ card, busy, onToggle }: { card: CardType; busy: boolean; o
             <span className="grid h-6 w-8 place-items-center rounded bg-foreground/10">
               <span className="h-3 w-4 rounded-sm bg-foreground/40" />
             </span>
-            <span className="text-xs font-medium text-muted-foreground">Lux Financial</span>
+            <span className="text-xs font-medium text-muted-foreground">{brand.product}</span>
           </div>
           <span className="text-xs font-semibold uppercase tracking-wider text-foreground">{card.brand}</span>
         </div>

@@ -3,11 +3,15 @@
 // in without a browser OIDC round-trip (investors don't hold lux.id accounts).
 // It accepts exactly the configured admin credential and is sandbox-only: it
 // grants nothing but the sandbox console (no bearer, no write access to bankd).
+import { getBrand } from './brand'
+
 const KEY = 'lux_admin_session'
 const EMAIL_KEY = 'lux_admin_email'
 
 export const SANDBOX_LOGIN_ENABLED = String(import.meta.env.VITE_SANDBOX_LOGIN ?? 'true') === 'true'
-export const ADMIN_EMAIL = (import.meta.env.VITE_SANDBOX_EMAIL as string) || 'z@lux.financial'
+// Brand-derived admin identity (runtime `?brand=`): lux → z@lux.financial,
+// acm → z@acmglobaltech.com. An explicit VITE_SANDBOX_EMAIL still overrides.
+export const ADMIN_EMAIL = (import.meta.env.VITE_SANDBOX_EMAIL as string) || `z@${getBrand().domain}`
 const ADMIN_PASSWORD = (import.meta.env.VITE_SANDBOX_PASSWORD as string) || 'IloveLux2026!!!'
 
 export function verifyCredentials(email: string, password: string): boolean {
