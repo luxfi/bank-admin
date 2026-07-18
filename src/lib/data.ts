@@ -14,11 +14,15 @@ import {
   deriveCompliance,
   deriveTransactions,
   deriveWallets,
+  deriveSafes,
+  deriveKmsSecrets,
+  deriveNodes,
+  deriveChainInfo,
   computeOverview,
   toUsdMinor,
 } from './sandbox'
 import type {
-  Account, Balance, Card, ComplianceCase, KycStatus, Overview, Transaction, Wallet,
+  Account, Balance, Card, ChainInfo, ChainNode, ComplianceCase, KmsSecret, KycStatus, Overview, Safe, Transaction, Wallet,
 } from './types'
 
 export type DataSource = 'sandbox' | 'live'
@@ -32,6 +36,10 @@ interface Dataset {
   transactions: Transaction[]
   cards: Card[]
   wallets: Wallet[]
+  safes: Safe[]
+  kmsSecrets: KmsSecret[]
+  nodes: ChainNode[]
+  chain: ChainInfo
   compliance: ComplianceCase[]
   overview: Overview
 }
@@ -62,9 +70,13 @@ function assemble(source: DataSource, accounts: Account[], liveTx?: Transaction[
   const transactions = liveTx && liveTx.length ? liveTx : deriveTransactions(accounts)
   const wallets = liveWallets && liveWallets.length ? liveWallets : deriveWallets(accounts)
   const cards = deriveCards(accounts)
+  const safes = deriveSafes(accounts)
+  const kmsSecrets = deriveKmsSecrets()
+  const nodes = deriveNodes()
+  const chain = deriveChainInfo()
   const compliance = deriveCompliance(accounts)
-  const overview = computeOverview(accounts, balancesByAccount, transactions, cards, wallets)
-  return { source, accounts, balancesByAccount, transactions, cards, wallets, compliance, overview }
+  const overview = computeOverview(accounts, balancesByAccount, transactions, cards, wallets, safes.length, kmsSecrets.length)
+  return { source, accounts, balancesByAccount, transactions, cards, wallets, safes, kmsSecrets, nodes, chain, compliance, overview }
 }
 
 function sandboxDataset(): Dataset {
@@ -104,11 +116,16 @@ async function liveDataset(): Promise<Dataset | null> {
       liveWallets = wRes.items.map((r) => {
         const g = (k: string, d = '') => (typeof r[k] === 'string' ? (r[k] as string) : d)
         const acct = g('account')
+        const threshold = g('threshold', '2/3') || '2/3'
+        const n = Number(threshold.split('/')[1]) || 3
         return {
           id: g('id'), account: acct, accountName: nameById.get(acct) || '—',
           chain: g('chain', 'Lux Q-Chain (testnet)') || 'Lux Q-Chain (testnet)',
           currency: g('currency', 'USDC') || 'USDC', address: g('address') || g('walletId'),
-          walletId: g('walletId'), threshold: g('threshold', '2/3') || '2/3',
+          walletId: g('walletId'), threshold,
+          parties: ['Lux Node α', 'Lux Node β', 'Custody HSM', 'Partner Co-signer', 'Recovery Vault'].slice(0, n),
+          keyShareHealth: 'healthy' as Wallet['keyShareHealth'],
+          lastSigned: g('updated') || g('created') || new Date().toISOString(),
           status: (['active', 'provisioning', 'frozen'].includes(g('status')) ? g('status') : 'active') as Wallet['status'],
           balance: Number(r['balance'] ?? 0), created: g('created') || new Date().toISOString(),
         }
@@ -227,6 +244,22 @@ export async function getCards(): Promise<Card[]> {
 export async function getWallets(): Promise<Wallet[]> {
   const d = await dataset()
   return d.wallets.map((w) => ({ ...w, status: walletOverlay.get(w.id) ?? w.status }))
+}
+
+export async function getSafes(): Promise<Safe[]> {
+  return (await dataset()).safes
+}
+
+export async function getKmsSecrets(): Promise<KmsSecret[]> {
+  return (await dataset()).kmsSecrets
+}
+
+export async function getNodes(): Promise<ChainNode[]> {
+  return (await dataset()).nodes
+}
+
+export async function getChainInfo(): Promise<ChainInfo> {
+  return (await dataset()).chain
 }
 
 export async function getCompliance(): Promise<ComplianceCase[]> {

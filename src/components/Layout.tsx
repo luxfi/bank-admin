@@ -6,6 +6,7 @@ import { Icon, type IconName } from './icons'
 import { Avatar } from './ui'
 import { CONFIGURED_SOURCE, getResolvedSource } from '@/lib/data'
 import { clearSession, hasSession, sessionEmail } from '@/lib/session'
+import { useBrand } from '@/lib/brand'
 import { useAsync } from '@/hooks/useAsync'
 import { cn } from '@/lib/cn'
 import { initials } from '@/lib/format'
@@ -18,7 +19,10 @@ const nav: { to: string; label: string; icon: IconName }[] = [
   { to: '/cards', label: 'Cards', icon: 'card' },
   { to: '/transactions', label: 'Transactions', icon: 'tx' },
   { to: '/compliance', label: 'Compliance', icon: 'shield' },
-  { to: '/custody', label: 'MPC · Safes', icon: 'cpu' },
+  { to: '/mpc', label: 'MPC', icon: 'cpu' },
+  { to: '/safes', label: 'Safes', icon: 'lock' },
+  { to: '/kms', label: 'KMS', icon: 'key' },
+  { to: '/nodes', label: 'Nodes', icon: 'server' },
 ]
 
 function NavItem({ to, label, icon, onClick }: { to: string; label: string; icon: IconName; onClick?: () => void }) {
@@ -72,6 +76,7 @@ export function Layout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+  const brand = useBrand()
   const mode = useAsync(getResolvedSource)
   const sandbox = hasSession()
   const email = (user?.email as string) || sessionEmail() || 'admin@lux.financial'
@@ -162,6 +167,10 @@ export function Layout() {
               </div>
             )}
             <Outlet />
+            <footer className="flex flex-col items-center justify-between gap-1 border-t border-border pt-4 text-xs text-muted-foreground sm:flex-row">
+              <span>© {new Date().getFullYear()} {brand.legal} · Sandbox</span>
+              <span>{brand.domain}</span>
+            </footer>
           </div>
         </main>
       </div>

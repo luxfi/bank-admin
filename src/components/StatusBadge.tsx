@@ -8,9 +8,10 @@ const tone: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'muted' |
   active: 'success', approved: 'success', completed: 'success', cleared: 'success', low: 'success',
   // in-flight
   processing: 'info', provisioning: 'info', pending: 'warning', not_started: 'muted', open: 'warning', medium: 'warning',
+  rotating: 'info',
   // negative
   failed: 'danger', rejected: 'danger', suspended: 'danger', frozen: 'info', escalated: 'danger', high: 'danger',
-  cancelled: 'muted', closed: 'muted',
+  revoked: 'danger', cancelled: 'muted', closed: 'muted',
 }
 
 export function StatusBadge({ status, dot = true }: { status: string; dot?: boolean }) {

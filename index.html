@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full dark">
+<html lang="en" class="h-full" data-theme="dark" data-brand="lux">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,7 +7,22 @@
     <!-- Lux ▼ mark: white downward triangle on black. -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Crect%20width='100'%20height='100'%20fill='black'/%3E%3Cpath%20d='M50%2078%20L20%2030%20L80%2030%20Z'%20fill='white'/%3E%3C/svg%3E" />
     <title>Lux Financial — Admin</title>
-    <meta name="description" content="Lux Financial admin console — customers, accounts, treasury, cards, compliance, and custody. Sandbox." />
+    <meta name="description" content="White-label banking-as-a-service admin console — customers, accounts, treasury, cards, compliance, custody, and chain." />
+    <!-- Runtime white-label brand: resolve ?brand / localStorage before first paint (no FOUC). -->
+    <script>
+      (function () {
+        try {
+          var p = new URLSearchParams(location.search).get('brand')
+          var b = p || localStorage.getItem('lux_admin_brand') || 'lux'
+          if (b !== 'lux' && b !== 'acm') b = 'lux'
+          if (p) localStorage.setItem('lux_admin_brand', b)
+          var root = document.documentElement
+          root.setAttribute('data-theme', b === 'acm' ? 'light' : 'dark')
+          root.setAttribute('data-brand', b)
+          document.title = (b === 'acm' ? 'ACM Global Tech' : 'Lux Financial') + ' — Admin'
+        } catch (e) {}
+      })()
+    </script>
   </head>
   <body class="h-full">
     <div id="root" class="h-full"></div>

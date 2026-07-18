@@ -74,19 +74,19 @@ export function Overview() {
         </Card>
       </div>
 
-      {/* Secondary KPIs + recent activity */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:col-span-3 lg:grid-cols-3">
-          {loading || !ov ? (
-            Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-[104px]" />)
-          ) : (
-            <>
-              <Stat label="Accounts" value={formatNumber(ov.accounts)} icon="wallet" />
-              <Stat label="Cards issued" value={formatNumber(ov.cardsIssued)} icon="card" />
-              <Stat label="MPC wallets" value={formatNumber(ov.mpcWallets)} icon="cpu" hint="testnet custody" />
-            </>
-          )}
-        </div>
+      {/* Secondary KPIs */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        {loading || !ov ? (
+          Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-[104px]" />)
+        ) : (
+          <>
+            <Stat label="Accounts" value={formatNumber(ov.accounts)} icon="wallet" />
+            <Stat label="Cards issued" value={formatNumber(ov.cardsIssued)} icon="card" />
+            <Stat label="MPC wallets" value={formatNumber(ov.mpcWallets)} icon="cpu" hint="testnet custody" />
+            <Stat label="Safes" value={formatNumber(ov.safes)} icon="lock" hint="on-chain multisig" />
+            <Stat label="Secrets" value={formatNumber(ov.secrets)} icon="key" hint="KMS · MPC-sharded" />
+          </>
+        )}
       </div>
 
       <Card>

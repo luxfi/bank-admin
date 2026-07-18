@@ -10,7 +10,10 @@ import { Treasury } from '@/pages/Treasury'
 import { Cards } from '@/pages/Cards'
 import { Transactions } from '@/pages/Transactions'
 import { Compliance } from '@/pages/Compliance'
-import { Custody } from '@/pages/Custody'
+import { MPC } from '@/pages/MPC'
+import { Safes } from '@/pages/Safes'
+import { KMS } from '@/pages/KMS'
+import { Nodes } from '@/pages/Nodes'
 import { LuxMark } from '@/components/Brand'
 import { hasSession } from '@/lib/session'
 
@@ -50,7 +53,10 @@ export function App() {
             <Route path="/cards" element={<Cards />} />
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/compliance" element={<Compliance />} />
-            <Route path="/custody" element={<Custody />} />
+            <Route path="/mpc" element={<MPC />} />
+            <Route path="/safes" element={<Safes />} />
+            <Route path="/kms" element={<KMS />} />
+            <Route path="/nodes" element={<Nodes />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

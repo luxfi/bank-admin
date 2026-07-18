@@ -5,6 +5,7 @@ import { Wordmark } from '@/components/Brand'
 import { Button } from '@/components/ui'
 import { Icon } from '@/components/icons'
 import { ADMIN_EMAIL, SANDBOX_LOGIN_ENABLED, setSession, verifyCredentials } from '@/lib/session'
+import { useBrand } from '@/lib/brand'
 import { cn } from '@/lib/cn'
 
 // Two ways in, one identity. "Sign in with Lux ID" runs native Hanzo IAM
@@ -14,6 +15,7 @@ import { cn } from '@/lib/cn'
 export function Login() {
   const { isAuthenticated, isLoading, login } = useAuth()
   const navigate = useNavigate()
+  const brand = useBrand()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [err, setErr] = useState(false)
@@ -108,7 +110,7 @@ export function Login() {
           </div>
         </div>
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          Lux Financial · white-label banking-as-a-service
+          {brand.legal} · {brand.tagline}
         </p>
       </div>
     </div>

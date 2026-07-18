@@ -8,7 +8,7 @@
  * hairline borders, monochrome primary. Geist type. Dark-only admin surface.
  */
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where([data-theme='dark'] *));
 
 :root {
   --radius: 0.625rem;
@@ -45,6 +45,48 @@
   --font-sans: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
     Helvetica, Arial, sans-serif;
   --font-mono: 'Geist Mono Variable', ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+}
+
+/*
+ * Light theme (white-label brands that opt into light mode, e.g. ACM). A real
+ * theme swap: every surface token flips. Selected via data-theme="light" on the
+ * document root (set pre-paint by the brand bootstrap in index.html).
+ */
+:root[data-theme='light'] {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.18 0 0);
+  --card: oklch(0.995 0 0);
+  --card-foreground: oklch(0.18 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0 0);
+  --primary: oklch(0.2 0 0);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.965 0 0);
+  --secondary-foreground: oklch(0.2 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.44 0 0);
+  --accent: oklch(0.95 0 0);
+  --accent-foreground: oklch(0.2 0 0);
+  --destructive: oklch(0.55 0.22 25.5);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.9 0 0);
+  --input: oklch(0.9 0 0);
+  --ring: oklch(0.72 0 0);
+
+  --success: oklch(0.55 0.15 152);
+  --success-foreground: oklch(0.99 0 0);
+  --warning: oklch(0.56 0.14 66);
+  --warning-foreground: oklch(0.99 0 0);
+  --info: oklch(0.5 0.2 262);
+  --info-foreground: oklch(0.99 0 0);
+}
+
+/* ACM brand accent — blue primary + ring (composes on top of the light theme). */
+:root[data-brand='acm'] {
+  --primary: #1f4fff;
+  --primary-foreground: #ffffff;
+  --ring: #1f4fff;
+  --info: #1f4fff;
 }
 
 @theme inline {
