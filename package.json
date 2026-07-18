@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.1.0",
   "type": "module",
+  "packageManager": "pnpm@9.15.0",
   "description": "Lux Financial — white-label BaaS admin console (sandbox). Built on @hanzo/ui + @hanzo/iam over bankd (Hanzo Base).",
   "scripts": {
     "dev": "vite",
