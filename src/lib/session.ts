@@ -1,26 +1,33 @@
-// Sandbox demo session. The admin's first-class auth is Hanzo IAM (lux.id) —
-// see hooks/useAuth. But this is an investor SANDBOX demo, and investors do not
-// hold lux.id accounts, so an optional passcode gate (enabled by
-// VITE_SANDBOX_LOGIN) grants a sandbox-only session. It is still a gate (shared
-// secret) — never unauthenticated — and unlocks nothing but sandbox data.
-const KEY = 'lux_admin_sandbox_session'
+// Sandbox admin session. The admin's first-class auth is Hanzo IAM (lux.id) —
+// see hooks/useAuth. This env-gated email+password gate lets the demo admin sign
+// in without a browser OIDC round-trip (investors don't hold lux.id accounts).
+// It accepts exactly the configured admin credential and is sandbox-only: it
+// grants nothing but the sandbox console (no bearer, no write access to bankd).
+const KEY = 'lux_admin_session'
+const EMAIL_KEY = 'lux_admin_email'
 
 export const SANDBOX_LOGIN_ENABLED = String(import.meta.env.VITE_SANDBOX_LOGIN ?? 'true') === 'true'
-const PASSCODE = (import.meta.env.VITE_SANDBOX_PASSCODE as string) || 'lux-sandbox'
+export const ADMIN_EMAIL = (import.meta.env.VITE_SANDBOX_EMAIL as string) || 'z@lux.financial'
+const ADMIN_PASSWORD = (import.meta.env.VITE_SANDBOX_PASSWORD as string) || 'IloveLux2026!!!'
 
-export function verifyPasscode(input: string): boolean {
-  return SANDBOX_LOGIN_ENABLED && input.trim() === PASSCODE
+export function verifyCredentials(email: string, password: string): boolean {
+  return (
+    SANDBOX_LOGIN_ENABLED &&
+    email.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase() &&
+    password === ADMIN_PASSWORD
+  )
 }
 
-export function setSandboxSession(): void {
+export function setSession(email: string): void {
   try {
     sessionStorage.setItem(KEY, '1')
+    sessionStorage.setItem(EMAIL_KEY, email)
   } catch {
     /* ignore */
   }
 }
 
-export function hasSandboxSession(): boolean {
+export function hasSession(): boolean {
   try {
     return sessionStorage.getItem(KEY) === '1'
   } catch {
@@ -28,9 +35,18 @@ export function hasSandboxSession(): boolean {
   }
 }
 
-export function clearSandboxSession(): void {
+export function sessionEmail(): string | null {
+  try {
+    return sessionStorage.getItem(EMAIL_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function clearSession(): void {
   try {
     sessionStorage.removeItem(KEY)
+    sessionStorage.removeItem(EMAIL_KEY)
   } catch {
     /* ignore */
   }

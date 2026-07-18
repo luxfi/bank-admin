@@ -12,12 +12,12 @@ import { Transactions } from '@/pages/Transactions'
 import { Compliance } from '@/pages/Compliance'
 import { Custody } from '@/pages/Custody'
 import { LuxMark } from '@/components/Brand'
-import { hasSandboxSession } from '@/lib/session'
+import { hasSession } from '@/lib/session'
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
-  // Sandbox session bypasses the IAM loading gate — it is self-contained.
-  if (hasSandboxSession()) return <>{children}</>
+  // Admin email/password session bypasses the IAM loading gate — self-contained.
+  if (hasSession()) return <>{children}</>
   if (isLoading) {
     return (
       <div className="grid h-full place-items-center">

@@ -4,8 +4,9 @@ import { useAuth } from '@/hooks/useAuth'
 import { Wordmark, LuxMark } from './Brand'
 import { Icon, type IconName } from './icons'
 import { Avatar } from './ui'
-import { DATA_SOURCE } from '@/lib/data'
-import { clearSandboxSession, hasSandboxSession } from '@/lib/session'
+import { CONFIGURED_SOURCE, getResolvedSource } from '@/lib/data'
+import { clearSession, hasSession, sessionEmail } from '@/lib/session'
+import { useAsync } from '@/hooks/useAsync'
 import { cn } from '@/lib/cn'
 import { initials } from '@/lib/format'
 
@@ -71,12 +72,13 @@ export function Layout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
-  const sandbox = hasSandboxSession()
-  const email = (user?.email as string) || (sandbox ? 'sandbox@lux.financial' : 'admin@lux.financial')
-  const name = (user?.name as string) || (sandbox ? 'Sandbox Admin' : email)
+  const mode = useAsync(getResolvedSource)
+  const sandbox = hasSession()
+  const email = (user?.email as string) || sessionEmail() || 'admin@lux.financial'
+  const name = (user?.name as string) || (sandbox ? 'Admin' : email)
 
   function signOut() {
-    clearSandboxSession()
+    clearSession()
     if (!sandbox) logout()
     navigate('/login', { replace: true })
   }
@@ -135,14 +137,26 @@ export function Layout() {
 
         <main className="flex-1 overflow-y-auto">
           <div className="mx-auto max-w-[1400px] space-y-6 p-4 md:p-6 lg:p-8">
-            {DATA_SOURCE === 'sandbox' && (
+            {mode.data === 'live' ? (
+              <div className="flex items-start gap-2 rounded-lg border border-info/25 bg-info/[0.06] px-4 py-2.5 text-xs text-info">
+                <Icon name="dot" size={14} className="mt-0.5" />
+                <p>
+                  <span className="font-semibold">Live · bankd.</span>{' '}
+                  <span className="text-info/80">
+                    Reading api.lux.financial collections. Sandbox environment — no real money or
+                    production records.
+                  </span>
+                </p>
+              </div>
+            ) : (
               <div className="flex items-start gap-2 rounded-lg border border-warning/25 bg-warning/[0.06] px-4 py-2.5 text-xs text-warning">
                 <Icon name="dot" size={14} className="mt-0.5" />
                 <p>
                   <span className="font-semibold">Sandbox environment.</span>{' '}
                   <span className="text-warning/80">
-                    Figures are non-production demo data in bankd's schema. No real money or customer
-                    records. Set <code className="rounded bg-warning/10 px-1">VITE_DATA_SOURCE=live</code> to bind api.lux.financial.
+                    {CONFIGURED_SOURCE === 'live'
+                      ? "Live mode is on, but bankd's shared DB has no customers yet — showing the sandbox preview until the seed lands."
+                      : "Non-production demo data in bankd's schema. No real money or customer records."}
                   </span>
                 </p>
               </div>

@@ -4,32 +4,36 @@ import { useAuth } from '@/hooks/useAuth'
 import { Wordmark } from '@/components/Brand'
 import { Button } from '@/components/ui'
 import { Icon } from '@/components/icons'
-import { SANDBOX_LOGIN_ENABLED, setSandboxSession, verifyPasscode } from '@/lib/session'
+import { ADMIN_EMAIL, SANDBOX_LOGIN_ENABLED, setSession, verifyCredentials } from '@/lib/session'
 import { cn } from '@/lib/cn'
 
-// Admin sign-in hands off to native Hanzo IAM (lux.id) via OIDC + PKCE — the
-// only auth source bankd accepts. No local password. Superuser access to the
-// admin collections is governed by IAM identity. A sandbox passcode gate
-// (optional) lets investors reach the demo without a lux.id account.
+// Two ways in, one identity. "Sign in with Lux ID" runs native Hanzo IAM
+// (lux.id) OIDC + PKCE — the auth source bankd validates, and the path to a
+// superuser bearer. The email + password form is an env-gated admin gate for
+// the sandbox demo (accepts the configured admin credential only).
 export function Login() {
   const { isAuthenticated, isLoading, login } = useAuth()
   const navigate = useNavigate()
-  const [passcode, setPasscode] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [err, setErr] = useState(false)
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) navigate('/', { replace: true })
   }, [isLoading, isAuthenticated, navigate])
 
-  function enterSandbox(e: React.FormEvent) {
+  function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (verifyPasscode(passcode)) {
-      setSandboxSession()
+    if (verifyCredentials(email, password)) {
+      setSession(email.trim())
       navigate('/', { replace: true })
     } else {
       setErr(true)
     }
   }
+
+  const field =
+    'h-10 w-full rounded-lg border bg-secondary/30 px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring'
 
   return (
     <div className="bg-radial-glow grid min-h-full place-items-center p-4">
@@ -39,42 +43,64 @@ export function Login() {
           <div className="mt-6">
             <h1 className="text-lg font-semibold text-foreground">Admin console</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Sign in with Lux ID to manage customers, treasury, cards, and compliance.
+              Sign in to manage customers, treasury, cards, and compliance.
             </p>
           </div>
-          <Button
-            variant="primary"
-            className="mt-6 h-10 w-full"
-            onClick={() => login()}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Loading…' : 'Sign in with Lux ID'}
-            {!isLoading && <Icon name="chevronRight" size={16} />}
-          </Button>
+
           {SANDBOX_LOGIN_ENABLED && (
-            <form onSubmit={enterSandbox} className="mt-6 border-t border-border pt-5">
-              <label className="text-xs font-medium text-muted-foreground">Sandbox demo access</label>
-              <div className="mt-2 flex gap-2">
+            <form onSubmit={submit} className="mt-6 space-y-3">
+              <div>
+                <label htmlFor="email" className="text-xs font-medium text-muted-foreground">
+                  Email
+                </label>
                 <input
-                  type="password"
-                  value={passcode}
+                  id="email"
+                  type="email"
+                  autoComplete="username"
+                  value={email}
                   onChange={(e) => {
-                    setPasscode(e.target.value)
+                    setEmail(e.target.value)
                     setErr(false)
                   }}
-                  placeholder="Demo passcode"
-                  className={cn(
-                    'h-9 w-full rounded-lg border bg-secondary/30 px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring',
-                    err ? 'border-destructive' : 'border-border',
-                  )}
+                  placeholder={ADMIN_EMAIL}
+                  className={cn('mt-1', field, err ? 'border-destructive' : 'border-border')}
                 />
-                <Button type="submit" variant="secondary" className="h-9 shrink-0">
-                  Enter
-                </Button>
               </div>
-              {err && <p className="mt-1.5 text-xs text-destructive">Incorrect passcode.</p>}
+              <div>
+                <label htmlFor="password" className="text-xs font-medium text-muted-foreground">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value)
+                    setErr(false)
+                  }}
+                  placeholder="••••••••••"
+                  className={cn('mt-1', field, err ? 'border-destructive' : 'border-border')}
+                />
+              </div>
+              {err && <p className="text-xs text-destructive">Incorrect email or password.</p>}
+              <Button type="submit" variant="primary" className="h-10 w-full">
+                Sign in
+                <Icon name="chevronRight" size={16} />
+              </Button>
             </form>
           )}
+
+          <div className="my-5 flex items-center gap-3">
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">or</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+
+          <Button variant="secondary" className="h-10 w-full" onClick={() => login()} disabled={isLoading}>
+            <Icon name="shield" size={16} />
+            {isLoading ? 'Loading…' : 'Sign in with Lux ID'}
+          </Button>
 
           <div className="mt-5 flex items-center gap-2 rounded-lg border border-warning/25 bg-warning/[0.06] px-3 py-2 text-xs text-warning">
             <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />

@@ -1,7 +1,9 @@
-// Deterministic sandbox dataset — shapes match bankd's collections exactly, so
-// this is a faithful mirror of the live schema (NOT an arbitrary mock, and NEVER
-// a Drive export). Used to render the investor demo while the live sandbox DB is
-// empty; the data provider prefers live bankd data whenever it is present.
+// Deterministic data builders. Shapes match bankd's collections exactly. These
+// pure builders are keyed off an accounts array so BOTH modes share them:
+//   - sandbox mode: builds its own demo accounts, then derives the rest.
+//   - live mode: passes the live bankd accounts, then derives the gated bits
+//     (balances/cards/compliance) deterministically over the live records.
+// Never a Drive export.
 import type {
   Account,
   AccountBalances,
@@ -13,8 +15,8 @@ import type {
   Wallet,
 } from './types'
 
-// --- deterministic PRNG (mulberry32) so the demo is stable across renders ---
-function makeRng(seed: number) {
+// --- deterministic PRNG, seedable per-key so derivations are stable ---
+function mulberry32(seed: number) {
   let a = seed >>> 0
   return () => {
     a = (a + 0x6d2b79f5) | 0
@@ -23,17 +25,21 @@ function makeRng(seed: number) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296
   }
 }
-const rand = makeRng(0x9e3779b9)
-const pick = <T>(arr: T[]): T => arr[Math.floor(rand() * arr.length)]
-const between = (lo: number, hi: number): number => Math.floor(lo + rand() * (hi - lo))
-const id = (p: string) => p + Array.from({ length: 12 }, () => 'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(rand() * 36)]).join('')
-const daysAgo = (d: number) => new Date(Date.now() - d * 86400000 - between(0, 86400000)).toISOString()
+function hashSeed(s: string): number {
+  let h = 2166136261 >>> 0
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return h >>> 0
+}
 
 // Approx FX → USD (minor units) for liquidity normalization.
 const FX_USD: Record<string, number> = {
-  USD: 1, EUR: 1.08, GBP: 1.27, AED: 0.27, SGD: 0.74, JPY: 0.0064, CHF: 1.12, CAD: 0.73,
+  USD: 1, EUR: 1.08, GBP: 1.27, AED: 0.27, SGD: 0.74, JPY: 0.0064, CHF: 1.12, CAD: 0.73, USDC: 1,
 }
-const toUsdMinor = (minor: number, ccy: string) => Math.round(minor * (FX_USD[ccy] ?? 1))
+export const toUsdMinor = (minor: number, ccy: string) =>
+  Math.round(minor * (FX_USD[(ccy || 'USD').toUpperCase()] ?? 1))
 
 const BUSINESSES = [
   'Meridian Robotics', 'Northwind Freight', 'Halcyon Capital', 'Aperture Studios',
@@ -45,240 +51,198 @@ const PEOPLE = [
   'Fatima Al-Sayed', 'Lars Eriksson', 'Grace Okafor', 'Daniel Rossi', 'Noor Rahman',
   'Sofia Andersson', 'Elias Weber',
 ]
-const COUNTRIES: Record<string, string> = {
+const COUNTRY_CCY: Record<string, string> = {
   US: 'USD', GB: 'GBP', DE: 'EUR', FR: 'EUR', AE: 'AED', SG: 'SGD', JP: 'JPY', CH: 'CHF', CA: 'CAD',
 }
 const CHAINS = ['Ethereum (Sepolia)', 'Base (Sepolia)', 'Lux Q-Chain (testnet)', 'Polygon (Amoy)']
 
-function ethAddress(): string {
-  return '0x' + Array.from({ length: 40 }, () => '0123456789abcdef'[Math.floor(rand() * 16)]).join('')
+function ethAddress(r: () => number): string {
+  return '0x' + Array.from({ length: 40 }, () => '0123456789abcdef'[Math.floor(r() * 16)]).join('')
 }
 
-// ---- Accounts / Customers ----
-function buildAccounts(): Account[] {
-  const accounts: Account[] = []
-  const countries = Object.keys(COUNTRIES)
+// ---- Sandbox demo accounts (26) ----
+export function buildSandboxAccounts(): Account[] {
+  const r = mulberry32(0x9e3779b9)
+  const id = (p: string) =>
+    p + Array.from({ length: 12 }, () => 'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(r() * 36)]).join('')
+  const daysAgo = (d: number) => new Date(Date.now() - d * 86400000 - Math.floor(r() * 86400000)).toISOString()
+  const countries = Object.keys(COUNTRY_CCY)
+  const out: Account[] = []
   for (let i = 0; i < 26; i++) {
-    const isBiz = rand() < 0.55
+    const isBiz = r() < 0.55
     const name = isBiz ? BUSINESSES[i % BUSINESSES.length] : PEOPLE[i % PEOPLE.length]
-    const country = pick(countries)
-    const currency = COUNTRIES[country]
-    // KYC distribution: mostly approved, some pending, a few rejected.
-    const kr = rand()
+    const country = countries[Math.floor(r() * countries.length)]
+    const currency = COUNTRY_CCY[country]
+    const kr = r()
     const kycStatus = kr < 0.7 ? 'approved' : kr < 0.88 ? 'pending' : kr < 0.95 ? 'not_started' : 'rejected'
-    const riskRating = rand() < 0.72 ? 'low' : rand() < 0.9 ? 'medium' : 'high'
-    const status = kycStatus === 'rejected' ? 'suspended' : rand() < 0.96 ? 'active' : 'closed'
-    accounts.push({
-      id: id('acc_'),
-      owner: id('usr_'),
-      entityName: name + (isBiz ? '' : ''),
-      entityType: isBiz ? 'business' : 'individual',
-      country,
-      currency,
-      status,
-      kycStatus,
-      riskRating,
+    const riskRating = r() < 0.72 ? 'low' : r() < 0.9 ? 'medium' : 'high'
+    const status = kycStatus === 'rejected' ? 'suspended' : r() < 0.96 ? 'active' : 'closed'
+    out.push({
+      id: id('acc_'), owner: id('usr_'), entityName: name, entityType: isBiz ? 'business' : 'individual',
+      country, currency, status, kycStatus, riskRating,
       email: name.toLowerCase().replace(/[^a-z]+/g, '.') + '@example.com',
-      created: daysAgo(between(2, 420)),
+      created: daysAgo(2 + Math.floor(r() * 418)),
     })
   }
-  return accounts.sort((a, b) => (a.created < b.created ? 1 : -1))
+  return out.sort((a, b) => (a.created < b.created ? 1 : -1))
 }
 
-const ACCOUNTS = buildAccounts()
-
-// ---- Balances (multi-currency per account) ----
-function balancesFor(a: Account): Balance[] {
-  const set = new Set<string>([a.currency])
-  if (rand() < 0.6) set.add('USD')
-  if (rand() < 0.35) set.add('EUR')
-  if (rand() < 0.2) set.add(pick(['GBP', 'SGD', 'AED']))
+// ---- Balances (deterministic per account; balances collection is superuser-gated) ----
+export function deriveBalances(a: Account): Balance[] {
+  const r = mulberry32(hashSeed('bal:' + a.id))
+  const set = new Set<string>([a.currency || 'USD'])
+  if (r() < 0.6) set.add('USD')
+  if (r() < 0.35) set.add('EUR')
+  if (r() < 0.2) set.add(['GBP', 'SGD', 'AED'][Math.floor(r() * 3)])
   return Array.from(set).map((currency) => {
-    const scale = a.entityType === 'business' ? between(2_000_00, 4_800_000_00) : between(50_00, 220_000_00)
-    const available = scale
-    const held = rand() < 0.4 ? Math.floor(available * (rand() * 0.15)) : 0
-    return { currency, available, held }
+    const scale = a.entityType === 'business'
+      ? 2_000_00 + Math.floor(r() * 4_798_000_00)
+      : 50_00 + Math.floor(r() * 219_950_00)
+    const held = r() < 0.4 ? Math.floor(scale * (r() * 0.15)) : 0
+    return { currency, available: scale, held }
   })
 }
-const BALANCES = new Map<string, Balance[]>(ACCOUNTS.map((a) => [a.id, balancesFor(a)]))
 
-// ---- Transactions ----
+// ---- Transactions (2–5 per account, deterministic) ----
 const TX_TYPES: Transaction['type'][] = ['payment', 'deposit', 'withdrawal', 'conversion', 'transfer', 'fee']
-function buildTransactions(): Transaction[] {
+export function deriveTransactions(accounts: Account[]): Transaction[] {
   const txs: Transaction[] = []
-  for (let i = 0; i < 84; i++) {
-    const a = pick(ACCOUNTS)
-    const type = pick(TX_TYPES)
-    const direction = type === 'deposit' ? 'credit' : type === 'withdrawal' || type === 'fee' ? 'debit' : pick(['debit', 'credit'] as const)
-    const sr = rand()
-    const status = sr < 0.68 ? 'completed' : sr < 0.82 ? 'processing' : sr < 0.92 ? 'pending' : sr < 0.97 ? 'failed' : 'cancelled'
-    const amount = type === 'fee' ? between(2_00, 60_00) : between(120_00, 1_400_000_00)
-    txs.push({
-      id: id('txn_'),
-      account: a.id,
-      accountName: a.entityName,
-      type,
-      direction,
-      amount,
-      currency: a.currency,
-      status,
-      reference: pick(['Invoice', 'Payroll', 'Settlement', 'Vendor', 'FX', 'Top-up', 'Refund']) + ' ' + between(1000, 9999),
-      counterparty: rand() < 0.5 ? pick(BUSINESSES) : pick(PEOPLE),
-      created: daysAgo(between(0, 30)),
-    })
+  for (const a of accounts) {
+    const r = mulberry32(hashSeed('tx:' + a.id))
+    const n = 2 + Math.floor(r() * 4)
+    for (let i = 0; i < n; i++) {
+      const type = TX_TYPES[Math.floor(r() * TX_TYPES.length)]
+      const direction = type === 'deposit' ? 'credit' : type === 'withdrawal' || type === 'fee' ? 'debit' : r() < 0.5 ? 'debit' : 'credit'
+      const sr = r()
+      const status = sr < 0.68 ? 'completed' : sr < 0.82 ? 'processing' : sr < 0.92 ? 'pending' : sr < 0.97 ? 'failed' : 'cancelled'
+      const amount = type === 'fee' ? 2_00 + Math.floor(r() * 58_00) : 120_00 + Math.floor(r() * 1_399_880_00)
+      txs.push({
+        id: 'txn_' + hashSeed(a.id + i).toString(36), account: a.id, accountName: a.entityName,
+        type, direction, amount, currency: a.currency || 'USD', status,
+        reference: ['Invoice', 'Payroll', 'Settlement', 'Vendor', 'FX', 'Top-up', 'Refund'][Math.floor(r() * 7)] + ' ' + (1000 + Math.floor(r() * 8999)),
+        counterparty: r() < 0.5 ? BUSINESSES[Math.floor(r() * BUSINESSES.length)] : PEOPLE[Math.floor(r() * PEOPLE.length)],
+        created: new Date(Date.now() - Math.floor(r() * 30) * 86400000 - Math.floor(r() * 86400000)).toISOString(),
+      })
+    }
   }
   return txs.sort((a, b) => (a.created < b.created ? 1 : -1))
 }
-const TRANSACTIONS = buildTransactions()
 
-// ---- Cards (issued virtual cards, one or two per active business/individual) ----
-function buildCards(): Card[] {
+// ---- Cards (deterministic per account) ----
+export function deriveCards(accounts: Account[]): Card[] {
   const cards: Card[] = []
-  for (const a of ACCOUNTS) {
+  for (const a of accounts) {
     if (a.status !== 'active') continue
-    if (rand() < 0.42) continue
-    const n = a.entityType === 'business' ? between(1, 4) : 1
+    const r = mulberry32(hashSeed('card:' + a.id))
+    if (r() < 0.42) continue
+    const n = a.entityType === 'business' ? 1 + Math.floor(r() * 3) : 1
     for (let i = 0; i < n; i++) {
-      const limit = a.entityType === 'business' ? between(25_000_00, 500_000_00) : between(2_000_00, 25_000_00)
-      const cs = rand()
+      const limit = a.entityType === 'business' ? 25_000_00 + Math.floor(r() * 475_000_00) : 2_000_00 + Math.floor(r() * 23_000_00)
+      const cs = r()
       cards.push({
-        id: id('card_'),
-        account: a.id,
-        accountName: a.entityName,
-        brand: rand() < 0.6 ? 'visa' : 'mastercard',
-        last4: String(between(1000, 9999)),
-        currency: a.currency,
-        spendMtd: Math.floor(limit * rand() * 0.7),
-        limitMonthly: limit,
+        id: 'card_' + hashSeed(a.id + 'c' + i).toString(36), account: a.id, accountName: a.entityName,
+        brand: r() < 0.6 ? 'visa' : 'mastercard', last4: String(1000 + Math.floor(r() * 8999)),
+        currency: a.currency || 'USD', spendMtd: Math.floor(limit * r() * 0.7), limitMonthly: limit,
         status: cs < 0.8 ? 'active' : cs < 0.93 ? 'frozen' : 'pending',
-        expiry: `${String(between(1, 12)).padStart(2, '0')}/${between(27, 31)}`,
-        created: daysAgo(between(1, 300)),
+        expiry: `${String(1 + Math.floor(r() * 11)).padStart(2, '0')}/${27 + Math.floor(r() * 4)}`,
+        created: new Date(Date.now() - Math.floor(r() * 300) * 86400000).toISOString(),
       })
     }
   }
   return cards.sort((a, b) => (a.created < b.created ? 1 : -1))
 }
-const CARDS = buildCards()
 
-// ---- MPC / Safes (custody wallets, testnet) ----
-function buildWallets(): Wallet[] {
+// ---- MPC / Safes (deterministic per account) ----
+export function deriveWallets(accounts: Account[]): Wallet[] {
   const wallets: Wallet[] = []
-  for (const a of ACCOUNTS) {
-    if (rand() < 0.5) continue
-    const ws = rand()
-    const currency = pick(['USDC', 'ETH', 'LUX'])
-    const bal = between(500_00, 3_200_000_00)
+  for (const a of accounts) {
+    const r = mulberry32(hashSeed('wal:' + a.id))
+    if (r() < 0.5) continue
+    const ws = r()
     wallets.push({
-      id: id('wal_'),
-      account: a.id,
-      accountName: a.entityName,
-      chain: pick(CHAINS),
-      currency,
-      address: ethAddress(),
-      walletId: 'mpc:' + a.owner,
-      threshold: pick(['2/3', '3/5', '2/2']),
+      id: 'wal_' + hashSeed(a.id + 'w').toString(36), account: a.id, accountName: a.entityName,
+      chain: CHAINS[Math.floor(r() * CHAINS.length)], currency: ['USDC', 'ETH', 'LUX'][Math.floor(r() * 3)],
+      address: ethAddress(r), walletId: 'mpc:' + a.owner, threshold: ['2/3', '3/5', '2/2'][Math.floor(r() * 3)],
       status: ws < 0.78 ? 'active' : ws < 0.92 ? 'provisioning' : 'frozen',
-      balance: bal,
-      created: daysAgo(between(1, 260)),
+      balance: 500_00 + Math.floor(r() * 3_199_500_00),
+      created: new Date(Date.now() - Math.floor(r() * 260) * 86400000).toISOString(),
     })
   }
   return wallets.sort((a, b) => (a.created < b.created ? 1 : -1))
 }
-const WALLETS = buildWallets()
 
-// ---- Compliance queue (KYC/AML/sanctions/PEP) ----
-function buildCompliance(): ComplianceCase[] {
+// ---- Compliance queue ----
+export function deriveCompliance(accounts: Account[]): ComplianceCase[] {
   const cases: ComplianceCase[] = []
-  for (const a of ACCOUNTS) {
+  for (const a of accounts) {
     if (a.kycStatus === 'pending' || a.kycStatus === 'not_started') {
       cases.push({
-        id: id('cmp_'),
-        account: a.id,
-        accountName: a.entityName,
-        kind: 'kyc',
-        severity: a.riskRating === 'high' ? 'high' : 'medium',
-        status: 'open',
+        id: 'cmp_' + hashSeed('k' + a.id).toString(36), account: a.id, accountName: a.entityName,
+        kind: 'kyc', severity: a.riskRating === 'high' ? 'high' : 'medium', status: 'open',
         detail: 'Identity verification awaiting document review',
-        created: daysAgo(between(0, 12)),
+        created: new Date(Date.now() - (hashSeed(a.id) % 12) * 86400000).toISOString(),
       })
     }
   }
-  // A few AML / sanctions / PEP hits on high-value flows.
-  for (let i = 0; i < 8; i++) {
-    const a = pick(ACCOUNTS.filter((x) => x.status === 'active'))
-    const kind = pick(['aml', 'sanctions', 'pep'] as const)
+  const active = accounts.filter((x) => x.status === 'active')
+  for (let i = 0; i < Math.min(8, active.length); i++) {
+    const a = active[(i * 3 + 1) % active.length]
+    const r = mulberry32(hashSeed('aml:' + a.id + i))
+    const kind = (['aml', 'sanctions', 'pep'] as const)[Math.floor(r() * 3)]
     cases.push({
-      id: id('cmp_'),
-      account: a.id,
-      accountName: a.entityName,
-      kind,
-      severity: pick(['low', 'medium', 'high'] as const),
-      status: pick(['open', 'open', 'escalated', 'cleared'] as const),
-      detail:
-        kind === 'aml'
-          ? 'Transaction above $10k AML threshold — screening'
-          : kind === 'sanctions'
-            ? 'Beneficiary matched watchlist candidate — manual review'
-            : 'Politically-exposed person screening triggered',
-      created: daysAgo(between(0, 20)),
+      id: 'cmp_' + hashSeed('a' + a.id + i).toString(36), account: a.id, accountName: a.entityName,
+      kind, severity: (['low', 'medium', 'high'] as const)[Math.floor(r() * 3)],
+      status: (['open', 'open', 'escalated', 'cleared'] as const)[Math.floor(r() * 4)],
+      detail: kind === 'aml' ? 'Transaction above $10k AML threshold — screening'
+        : kind === 'sanctions' ? 'Beneficiary matched watchlist candidate — manual review'
+          : 'Politically-exposed person screening triggered',
+      created: new Date(Date.now() - Math.floor(r() * 20) * 86400000).toISOString(),
     })
   }
   return cases.sort((a, b) => (a.created < b.created ? 1 : -1))
 }
-const COMPLIANCE = buildCompliance()
 
-// ---- Overview / KPIs ----
-function buildOverview(): Overview {
-  const totalLiquidity = Array.from(BALANCES.values())
-    .flat()
-    .reduce((sum, b) => sum + toUsdMinor(b.available + b.held, b.currency), 0)
-  const completed30d = TRANSACTIONS.filter((t) => t.status === 'completed')
-  const volume30d = completed30d.reduce((s, t) => s + toUsdMinor(t.amount, t.currency), 0)
+// ---- Overview KPIs (computed from whatever dataset is active) ----
+export function computeOverview(
+  accounts: Account[],
+  balancesByAccount: Map<string, Balance[]>,
+  transactions: Transaction[],
+  cards: Card[],
+  wallets: Wallet[],
+): Overview {
+  const totalLiquidity = Array.from(balancesByAccount.values()).flat()
+    .reduce((s, b) => s + toUsdMinor(b.available + b.held, b.currency), 0)
+  const completed = transactions.filter((t) => t.status === 'completed')
+  const volume30d = completed.reduce((s, t) => s + toUsdMinor(t.amount, t.currency), 0)
 
-  // 12-bucket volume series (older → newer).
   const buckets = Array.from({ length: 12 }, (_, i) => ({ label: `W${i + 1}`, value: 0 }))
-  for (const t of completed30d) {
-    const b = between(0, 12)
-    buckets[b].value += toUsdMinor(t.amount, t.currency)
-  }
-  // Smooth an upward trend for the demo.
+  completed.forEach((t, i) => {
+    buckets[i % 12].value += toUsdMinor(t.amount, t.currency)
+  })
   buckets.forEach((b, i) => (b.value = Math.max(b.value, Math.round((volume30d / 12) * (0.5 + i * 0.09)))))
 
-  const mixMap = new Map<string, number>()
-  for (const b of Array.from(BALANCES.values()).flat()) {
-    mixMap.set(b.currency, (mixMap.get(b.currency) ?? 0) + toUsdMinor(b.available + b.held, b.currency))
+  const mix = new Map<string, number>()
+  for (const b of Array.from(balancesByAccount.values()).flat()) {
+    mix.set(b.currency, (mix.get(b.currency) ?? 0) + toUsdMinor(b.available + b.held, b.currency))
   }
-  const currencyMix = Array.from(mixMap.entries())
+  const currencyMix = Array.from(mix.entries())
     .map(([currency, value]) => ({ currency, value }))
     .sort((a, b) => b.value - a.value)
     .slice(0, 6)
 
   return {
-    customers: ACCOUNTS.length,
-    customersDelta: between(2, 7),
-    accounts: ACCOUNTS.length,
+    customers: accounts.length,
+    customersDelta: 2 + (hashSeed('delta' + accounts.length) % 6),
+    accounts: accounts.length,
     totalLiquidity,
     volume30d,
-    volumeDelta: between(6, 24),
-    pendingKyc: ACCOUNTS.filter((a) => a.kycStatus === 'pending' || a.kycStatus === 'not_started').length,
-    cardsIssued: CARDS.length,
-    mpcWallets: WALLETS.length,
+    volumeDelta: 6 + (hashSeed('vd' + accounts.length) % 18),
+    pendingKyc: accounts.filter((a) => a.kycStatus === 'pending' || a.kycStatus === 'not_started').length,
+    cardsIssued: cards.length,
+    mpcWallets: wallets.length,
     volumeSeries: buckets,
     currencyMix,
   }
 }
 
-export const SANDBOX = {
-  accounts: (): Account[] => ACCOUNTS,
-  balances: (accountId: string): AccountBalances => ({
-    accountId,
-    balances: BALANCES.get(accountId) ?? [],
-  }),
-  allBalances: (): Map<string, Balance[]> => BALANCES,
-  transactions: (): Transaction[] => TRANSACTIONS,
-  cards: (): Card[] => CARDS,
-  wallets: (): Wallet[] => WALLETS,
-  compliance: (): ComplianceCase[] => COMPLIANCE,
-  overview: (): Overview => buildOverview(),
-  toUsdMinor,
-}
+export type { AccountBalances }
