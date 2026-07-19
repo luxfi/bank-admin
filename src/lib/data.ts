@@ -67,8 +67,16 @@ function normalizeAccount(r: Record<string, unknown>): Account {
 
 function assemble(source: DataSource, accounts: Account[], liveTx?: Transaction[], liveWallets?: Wallet[]): Dataset {
   const balancesByAccount = new Map<string, Balance[]>(accounts.map((a) => [a.id, deriveBalances(a)]))
-  const transactions = liveTx && liveTx.length ? liveTx : deriveTransactions(accounts)
-  const wallets = liveWallets && liveWallets.length ? liveWallets : deriveWallets(accounts)
+  // Keep any real live records (the hero's actual transactions/wallet) and
+  // enrich every account that has none with deterministic derived data, so a
+  // book of seeded customers lights up the whole console without discarding the
+  // authentic hero activity. Merge, then sort newest-first.
+  const txAccts = new Set((liveTx ?? []).map((t) => t.account))
+  const transactions = [...(liveTx ?? []), ...deriveTransactions(accounts.filter((a) => !txAccts.has(a.id)))]
+    .sort((a, b) => (a.created < b.created ? 1 : -1))
+  const walAccts = new Set((liveWallets ?? []).map((w) => w.account))
+  const wallets = [...(liveWallets ?? []), ...deriveWallets(accounts.filter((a) => !walAccts.has(a.id)))]
+    .sort((a, b) => (a.created < b.created ? 1 : -1))
   const cards = deriveCards(accounts)
   const safes = deriveSafes(accounts)
   const kmsSecrets = deriveKmsSecrets()

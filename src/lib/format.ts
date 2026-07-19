@@ -6,27 +6,37 @@ function decimals(currency: string): number {
   return currencyDecimals[currency.toUpperCase()] ?? 2
 }
 
+// Intl.NumberFormat with style:'currency' only accepts ISO-4217 codes and throws
+// a RangeError on crypto tickers (USDC, LUX, ETH, DAI, BTC…). Everything routes
+// through here: try the currency style, and on any rejection fall back to a
+// plain grouped number with the ticker appended ("1,000.00 USDC"). No crypto
+// code can ever crash a page.
+function formatMoney(major: number, code: string, opts: Intl.NumberFormatOptions): string {
+  try {
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency: code, ...opts }).format(major)
+  } catch {
+    const { style: _style, currency: _currency, ...rest } = opts
+    return new Intl.NumberFormat('en-US', rest).format(major) + ' ' + code
+  }
+}
+
 export function formatAmount(minorUnits: number, currency: string): string {
   const d = decimals(currency)
   const major = minorUnits / Math.pow(10, d)
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: currency.toUpperCase(),
+  return formatMoney(major, (currency || 'USD').toUpperCase(), {
     minimumFractionDigits: d,
     maximumFractionDigits: d,
-  }).format(major)
+  })
 }
 
-// Compact money for KPI tiles (e.g. $1.2M). Always USD-normalized display.
+// Compact money for KPI tiles (e.g. $1.2M). Usually USD-normalized display.
 export function formatCompact(minorUnits: number, currency = 'USD'): string {
   const d = decimals(currency)
   const major = minorUnits / Math.pow(10, d)
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: currency.toUpperCase(),
+  return formatMoney(major, (currency || 'USD').toUpperCase(), {
     notation: 'compact',
     maximumFractionDigits: 1,
-  }).format(major)
+  })
 }
 
 export function formatNumber(n: number): string {

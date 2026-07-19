@@ -73,7 +73,7 @@ export function Safes() {
                   <TD className="text-muted-foreground">{s.chain}</TD>
                   <TD><span className="font-mono text-xs text-muted-foreground">{shortAddr(s.address)}</span></TD>
                   <TD><Badge tone="muted">{s.threshold}</Badge></TD>
-                  <TD className="text-right font-medium tabular-nums">{formatAmount(s.balance, s.currency)} {s.currency}</TD>
+                  <TD className="text-right font-medium tabular-nums">{formatAmount(s.balance, s.currency)}</TD>
                   <TD className="text-right">
                     {s.pendingTx > 0 ? <Badge tone="warning">{s.pendingTx}</Badge> : <span className="text-muted-foreground">0</span>}
                   </TD>
@@ -97,7 +97,7 @@ export function Safes() {
               <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Safe</p>
               <DetailRow label="Address"><span className="font-mono text-xs">{shortAddr(sel.address)}</span></DetailRow>
               <DetailRow label="Policy"><Badge tone="muted">{sel.threshold}</Badge></DetailRow>
-              <DetailRow label="Balance"><span className="tabular-nums">{formatAmount(sel.balance, sel.currency)} {sel.currency}</span></DetailRow>
+              <DetailRow label="Balance"><span className="tabular-nums">{formatAmount(sel.balance, sel.currency)}</span></DetailRow>
               <DetailRow label="Queued txns">{sel.pendingTx}</DetailRow>
               <DetailRow label="Nonce">{sel.nonce}</DetailRow>
               <DetailRow label="Created">{formatDate(sel.created)}</DetailRow>

@@ -94,7 +94,7 @@ export function MPC() {
                   <TD>
                     <Badge tone={healthTone[w.keyShareHealth]} dot>{w.keyShareHealth}</Badge>
                   </TD>
-                  <TD className="text-right font-medium tabular-nums">{formatAmount(w.balance, w.currency)} {w.currency}</TD>
+                  <TD className="text-right font-medium tabular-nums">{formatAmount(w.balance, w.currency)}</TD>
                   <TD className="text-muted-foreground">{relativeTime(w.lastSigned)}</TD>
                   <TD><StatusBadge status={w.status} /></TD>
                   <TD className="text-right">
