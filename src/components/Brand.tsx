@@ -31,8 +31,10 @@ export const LuxMark = BrandMark
 export function Wordmark({ className }: { className?: string }) {
   const brand = useBrand()
   if (brand.id === 'acm') {
+    // Intrinsic large size + heavy weight so the wordmark is prominent
+    // regardless of the caller (nav passes no text-size → must not render tiny).
     return (
-      <span className={cn('inline-flex items-baseline font-bold lowercase tracking-tight', className)}>
+      <span className={cn('inline-flex items-baseline text-xl font-extrabold lowercase leading-none tracking-tight', className)}>
         <span style={{ color: brand.accent }}>{brand.wordmark.text}</span>
       </span>
     )
