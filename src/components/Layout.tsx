@@ -51,7 +51,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     <>
       <div className="flex h-14 items-center px-5">
         <Link to="/" onClick={onNavigate}>
-          <Wordmark className="text-[15px]" />
+          <Wordmark className="text-2xl" />
         </Link>
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
@@ -142,30 +142,27 @@ export function Layout() {
 
         <main className="flex-1 overflow-y-auto">
           <div className="mx-auto max-w-[1400px] space-y-6 p-4 md:p-6 lg:p-8">
-            {mode.data === 'live' ? (
-              <div className="flex items-start gap-2 rounded-lg border border-info/25 bg-info/[0.06] px-4 py-2.5 text-xs text-info">
-                <Icon name="dot" size={14} className="mt-0.5" />
-                <p>
-                  <span className="font-semibold">Live · bankd.</span>{' '}
-                  <span className="text-info/80">
-                    Reading api.{brand.domain} collections. Sandbox environment — no real money or
-                    production records.
-                  </span>
-                </p>
-              </div>
-            ) : (
-              <div className="flex items-start gap-2 rounded-lg border border-warning/25 bg-warning/[0.06] px-4 py-2.5 text-xs text-warning">
-                <Icon name="dot" size={14} className="mt-0.5" />
-                <p>
-                  <span className="font-semibold">Sandbox environment.</span>{' '}
-                  <span className="text-warning/80">
-                    {CONFIGURED_SOURCE === 'live'
-                      ? "Live mode is on, but bankd's shared DB has no customers yet — showing the sandbox preview until the seed lands."
-                      : "Non-production demo data in bankd's schema. No real money or customer records."}
-                  </span>
-                </p>
-              </div>
-            )}
+            {/* Sandbox notice — hidden on ?render (clean product-shot mode). */}
+            {!(typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('render')) &&
+              (mode.data === 'live' ? (
+                <div className="flex items-start gap-2 rounded-lg border border-info/25 bg-info/[0.06] px-4 py-2.5 text-xs text-info">
+                  <Icon name="dot" size={14} className="mt-0.5" />
+                  <p>
+                    <span className="font-semibold">Live.</span>{' '}
+                    <span className="text-info/80">
+                      Sandbox environment — no real money or production records.
+                    </span>
+                  </p>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2 rounded-lg border border-warning/25 bg-warning/[0.06] px-4 py-2.5 text-xs text-warning">
+                  <Icon name="dot" size={14} className="mt-0.5" />
+                  <p>
+                    <span className="font-semibold">Sandbox environment.</span>{' '}
+                    <span className="text-warning/80">No real money or production records.</span>
+                  </p>
+                </div>
+              ))}
             <Outlet />
             <footer className="flex flex-col items-center justify-between gap-1 border-t border-border pt-4 text-xs text-muted-foreground sm:flex-row">
               <span>© {new Date().getFullYear()} {brand.legal} · Sandbox</span>
