@@ -12,14 +12,15 @@ export function BrandMark({ size = 22, className }: { size?: number; className?:
       </svg>
     )
   }
-  // Tile mark (ACM): filled rounded square in the brand accent.
+  // ACM has no single-letter tile — the mark IS the full "acm" wordmark, in the
+  // brand accent (matches acmglobaltech.com; never a bare "a").
   return (
     <span
-      className={cn('inline-grid place-items-center rounded-[6px] font-bold lowercase text-white', className)}
-      style={{ width: size, height: size, backgroundColor: brand.accent, fontSize: size * 0.5 }}
+      className={cn('inline-flex items-center font-extrabold lowercase leading-none tracking-tight', className)}
+      style={{ fontSize: size, color: brand.accent }}
       aria-hidden="true"
     >
-      {brand.wordmark.text[0]}
+      {brand.wordmark.text}
     </span>
   )
 }
