@@ -4,7 +4,7 @@
   "version": "1.2.0",
   "type": "module",
   "packageManager": "pnpm@9.15.0",
-  "description": "Lux Financial — white-label BaaS admin console (sandbox). Built on @hanzo/ui + @hanzo/iam over bankd (Hanzo Base).",
+  "description": "Lux Financial \u2014 white-label BaaS admin console (sandbox). Built on @hanzo/ui + @hanzo/iam over bankd (Hanzo Base).",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
@@ -15,7 +15,7 @@
   "dependencies": {
     "@fontsource-variable/geist": "^5.1.0",
     "@fontsource-variable/geist-mono": "^5.1.0",
-    "@hanzo/iam": "^0.13.6",
+    "@hanzo/iam": "^0.21.18",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router": "^7.0.0"
