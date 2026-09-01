@@ -370,7 +370,7 @@ export function deriveChainInfo(): ChainInfo {
     validators,
     fullNodes: nodes.length - validators,
     finalizedPct: 100,
-    rpcEndpoints: [`https://rpc.testnet.${dom}/v1/bc/C/rpc`, `wss://rpc.testnet.${dom}/v1/bc/C/ws`],
+    rpcEndpoints: [`https://rpc.testnet.${dom}/v1/chain/C/rpc`, `wss://rpc.testnet.${dom}/v1/chain/C/ws`],
     throughput,
     recentBlocks,
   }
