@@ -5,7 +5,6 @@
  * Token values are lifted verbatim from @hanzo/ui `hanzo-default-colors.css`
  * (the shadcn-compatible oklch scale) so this console reads as the same design
  * system: true-black canvas (--background: oklch(0 0 0)), near-black cards,
- * hairline borders, monochrome primary. Geist type. Dark-only admin surface.
  */
 
 @custom-variant dark (&:where([data-theme='dark'] *));
@@ -42,9 +41,8 @@
   --info: oklch(0.7 0.13 233);
   --info-foreground: oklch(0.985 0 0);
 
-  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
-    Helvetica, Arial, sans-serif;
-  --font-mono: 'Geist Mono Variable', ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+  --font-sans: Zen, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: Zen Mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 }
 
 /*
@@ -116,8 +114,8 @@
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
 
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-mono);
+  --font-sans: Zen, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: Zen Mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -137,7 +135,7 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
-    font-family: var(--font-sans);
+    font-family: Zen, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
