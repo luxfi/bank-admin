@@ -5,7 +5,6 @@ import { Wordmark, LuxMark } from './Brand'
 import { Icon, type IconName } from './icons'
 import { Avatar } from './ui'
 import { CONFIGURED_SOURCE, getResolvedSource } from '@/lib/data'
-import { clearSession, hasSession, sessionEmail } from '@/lib/session'
 import { useBrand } from '@/lib/brand'
 import { useAsync } from '@/hooks/useAsync'
 import { cn } from '@/lib/cn'
@@ -78,13 +77,11 @@ export function Layout() {
   const [open, setOpen] = useState(false)
   const brand = useBrand()
   const mode = useAsync(getResolvedSource)
-  const sandbox = hasSession()
-  const email = (user?.email as string) || sessionEmail() || `admin@${brand.domain}`
-  const name = (user?.name as string) || (sandbox ? 'Admin' : email)
+  const email = (user?.email as string) || `admin@${brand.domain}`
+  const name = (user?.name as string) || email
 
   function signOut() {
-    clearSession()
-    if (!sandbox) logout()
+    logout()
     navigate('/login', { replace: true })
   }
 

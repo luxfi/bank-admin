@@ -15,12 +15,9 @@ import { Safes } from '@/pages/Safes'
 import { KMS } from '@/pages/KMS'
 import { Nodes } from '@/pages/Nodes'
 import { LuxMark } from '@/components/Brand'
-import { hasSession } from '@/lib/session'
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
-  // Admin email/password session bypasses the IAM loading gate — self-contained.
-  if (hasSession()) return <>{children}</>
   if (isLoading) {
     return (
       <div className="grid h-full place-items-center">
