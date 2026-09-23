@@ -35,7 +35,7 @@ export function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/callback" element={<Callback />} />
+          <Route path="/auth/callback" element={<Callback />} />
           <Route
             element={
               <Protected>

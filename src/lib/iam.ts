@@ -1,6 +1,8 @@
 // Native Hanzo IAM (lux.id) — the ONLY auth source for the bank (bankd logs
-// "IAM is the only auth source"). OIDC + PKCE via @hanzo/iam. The admin app is
-// the `lux-bank` IAM client (org `lux`); discovery/token/userinfo resolve
+// "IAM is the only auth source"). OIDC + PKCE via @hanzo/iam. The console signs
+// in through `lux-financial`, the public client every Lux Financial browser
+// surface shares (luxfi/universe infra/k8s/iam/provision.yaml); `lux-bank` is
+// bankd's service identity, never a browser's. Discovery/token/userinfo resolve
 // through bankd's transparent /v1/iam proxy at api.lux.financial so no
 // hand-rolled OAuth and no cross-origin surprises (proxy is CORS `*`).
 import type { IAMConfig } from '@hanzo/iam/browser'
@@ -10,8 +12,8 @@ const origin = typeof window !== 'undefined' ? window.location.origin : 'https:/
 
 export const IAM_CONFIG: IAMConfig = {
   serverUrl: `${API_BASE}/v1/iam`,
-  clientId: 'lux-bank',
-  redirectUri: `${origin}/callback`,
+  clientId: 'lux-financial',
+  redirectUri: `${origin}/auth/callback`,
   scope: 'openid profile email',
   proxyBaseUrl: API_BASE,
 }
